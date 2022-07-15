@@ -183,6 +183,36 @@ def generate_commit_data(repo_ids):
     logging.debug("COMMITS_DATA_QUERY - END")
     return df_commits.to_dict("records")
 
+#callback for libyear data
+@callback(Output("average-libyears-data", "data"), Input("repo_choices", "data"))
+def generate_commit_data(repo_ids):
+    logging.debug("AVG_LIBYEAR_DATA_QUERY - START")
+    # query input format update
+    repo_statement = str(repo_ids)
+    repo_statement = repo_statement[1:-1]
+
+    commits_query = f"""
+                    SELECT
+                        a.repo_id,
+                        a.repo_name, 
+                        AVG ( libyear ) AS avg_libyear,
+                        date(b.data_collection_date) AS thedate
+                    FROM
+                        repo a, 
+                        repo_deps_libyear b
+                    JOIN avg_libyear
+                    ON a.repo_id=b.repo_id
+                    WHERE a.repo_id in ({repo_statement})                    	
+                    ORDER BY
+                        avg_libyear desc,
+                        thedate desc;                    
+                  
+                    """
+
+    df_commits = augur_db.run_query(commits_query)
+
+    logging.debug("COMMITS_DATA_QUERY - END")
+    return df_commits.to_dict("records")
 
 # call back for contributions query
 @callback(Output("contributions", "data"), Input("repo_choices", "data"))
